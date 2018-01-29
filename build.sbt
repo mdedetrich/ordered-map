@@ -87,6 +87,20 @@ lazy val linkedMap = crossProject(JSPlatform, JVMPlatform)
 
 lazy val benchmark = crossProject(JSPlatform, JVMPlatform)
   .in(file("benchmark"))
+  .jvmSettings(
+    libraryDependencies += {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n == 10 =>
+          "org.specs2" %% "specs2-core" % "3.9.5" % Test
+        case _ => "org.specs2" %% "specs2-core" % "4.0.0" % Test
+      }
+    },
+    // TODO: Is there a better way to do this, we essentially run the benchmarks twice?
+    test in Test := (test in Test dependsOn (run in Jmh).toTask(
+      " -i 10 -wi 10 -f1 -t1")).value,
+    fork in Test := true,
+    scalacOptions in Test ++= Seq("-Yrangepos")
+  )
   .dependsOn(linkedMap)
 
 lazy val linkedMapJVMBenchmark = benchmark.jvm.enablePlugins(JmhPlugin)
